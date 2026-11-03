@@ -39,7 +39,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $mensagem = "Preencha o título e um preço válido.";
         $tipo = "erro";
     } else {
-        // troca de capa (opcional)
         if (!empty($_FILES["foto"]["name"])) {
             $ext = strtolower(pathinfo($_FILES["foto"]["name"], PATHINFO_EXTENSION));
             if (in_array($ext, ["jpg", "jpeg", "png", "webp", "gif"])) {
@@ -60,7 +59,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $stmt->bind_param("sdssii", $titulo, $custo, $categoria, $descricao, $estoque, $isbn);
 
         if ($stmt->execute()) {
-            // atualiza autor
             if ($nome_autor != "") {
                 $stmt2 = $conexao->prepare("UPDATE autores SET nome_autor = ? WHERE autoria = ?");
                 $stmt2->bind_param("si", $nome_autor, $isbn);
@@ -74,7 +72,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 }
                 $stmt2->close();
             }
-            // atualiza editora
             if ($nome_editora != "") {
                 $stmt2 = $conexao->prepare("UPDATE editora SET nome = ? WHERE publicacao = ?");
                 $stmt2->bind_param("si", $nome_editora, $isbn);

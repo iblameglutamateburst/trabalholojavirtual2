@@ -1,0 +1,258 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f1ec;
+    color: #3b3226;
+}
+
+header {
+    background: #4a3728;
+    color: #f4f1ec;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 {
+    font-size: 24px;
+}
+
+header nav a {
+    color: #f4f1ec;
+    margin-left: 15px;
+    text-decoration: none;
+}
+
+header nav a:hover {
+    text-decoration: underline;
+}
+
+main {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.formulario {
+    width: 380px;
+    margin: 60px auto;
+    padding: 35px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.formulario h1 {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 22px;
+}
+
+.formulario label {
+    display: block;
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.formulario input[type="text"],
+.formulario input[type="email"],
+.formulario input[type="password"],
+.formulario input[type="number"],
+.formulario input[type="date"],
+.formulario select {
+    width: 100%;
+    padding: 11px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+.formulario .opcoes {
+    margin-top: 15px;
+    font-size: 13px;
+}
+
+.formulario button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    border: none;
+    border-radius: 8px;
+    background: #4a3728;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.formulario button:hover {
+    background: #6b5240;
+}
+
+.formulario .rodape {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 14px;
+}
+
+.mensagem {
+    text-align: center;
+    margin-top: 18px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.mensagem.erro {
+    color: #b03a2e;
+}
+
+.mensagem.ok {
+    color: #1e8449;
+}
+
+.pesquisa {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 40px;
+}
+
+.pesquisa input {
+    flex: 1;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+.pesquisa button {
+    padding: 15px 25px;
+    border: none;
+    border-radius: 8px;
+    background: #4a3728;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.pesquisa button:hover {
+    background: #6b5240;
+}
+
+.livros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.livro {
+    width: 240px;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s;
+}
+
+.livro:hover {
+    transform: translateY(-5px);
+}
+
+.livro-imagem {
+    height: 150px;
+    background: #e8e0d5;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 55px;
+    margin-bottom: 15px;
+}
+
+.livro h3 {
+    margin-bottom: 8px;
+    font-size: 17px;
+}
+
+.livro .detalhe {
+    font-size: 13px;
+    color: #7a6a58;
+    margin-bottom: 4px;
+}
+
+.preco {
+    font-size: 20px;
+    font-weight: bold;
+    color: #1e8449;
+    margin: 10px 0;
+}
+
+.livro button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: #4a3728;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.livro button:hover {
+    background: #6b5240;
+}
+
+.nenhum {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+th {
+    background: #4a3728;
+    color: white;
+}
+
+.menu-admin {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.menu-admin a {
+    background: white;
+    padding: 15px 25px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #4a3728;
+    font-weight: bold;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.menu-admin a:hover {
+    background: #4a3728;
+    color: white;
+}

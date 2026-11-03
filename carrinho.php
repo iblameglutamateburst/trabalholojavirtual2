@@ -9,7 +9,6 @@ if (!isset($_SESSION["id"])) {
 
 $aviso = "";
 
-// Adicionar item — valida existência e estoque (Controle de estoque + Validação dos dados)
 if (isset($_POST["isbn"])) {
     $isbn = (int)$_POST["isbn"];
     $qtd = max(1, (int)($_POST["quantidade"] ?? 1));
@@ -35,7 +34,6 @@ if (isset($_POST["isbn"])) {
     }
 }
 
-// Botão + — só aumenta se tiver estoque
 if (isset($_GET["mais"])) {
     $i = (int)$_GET["mais"];
     if (isset($_SESSION["carrinho"][$i])) {
@@ -51,7 +49,6 @@ if (isset($_GET["mais"])) {
     }
 }
 
-// Botão − — remove ao chegar em zero
 if (isset($_GET["menos"])) {
     $i = (int)$_GET["menos"];
     if (isset($_SESSION["carrinho"][$i])) {
@@ -62,12 +59,10 @@ if (isset($_GET["menos"])) {
     }
 }
 
-// Remover item
 if (isset($_GET["remover"])) {
     unset($_SESSION["carrinho"][(int)$_GET["remover"]]);
 }
 
-// Limpar carrinho
 if (isset($_GET["limpar"])) {
     $_SESSION["carrinho"] = [];
     header("Location: carrinho.php");
@@ -88,7 +83,6 @@ if (!empty($_SESSION["carrinho"])) {
     while ($livro = mysqli_fetch_assoc($resultado)) {
         $livro["qtd"] = (int)$_SESSION["carrinho"][$livro["isbn"]];
 
-        // Estoque caiu depois de adicionar? Ajusta ou remove sozinho
         if ($livro["qtd"] > (int)$livro["estoque"]) {
             if ((int)$livro["estoque"] <= 0) {
                 unset($_SESSION["carrinho"][$livro["isbn"]]);

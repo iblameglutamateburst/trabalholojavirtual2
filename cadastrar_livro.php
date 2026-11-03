@@ -36,7 +36,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $mensagem = "Já existe um livro com este ISBN.";
             $tipo = "erro";
         } else {
-            // upload da capa
             $foto = "";
             if (!empty($_FILES["foto"]["name"])) {
                 $ext = strtolower(pathinfo($_FILES["foto"]["name"], PATHINFO_EXTENSION));
@@ -57,7 +56,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $stmt->close();
 
             if ($ok) {
-                // autor e editora ligados ao livro pelo ISBN
                 if ($nome_autor != "") {
                     $prox = (int)$conexao->query("SELECT COALESCE(MAX(codigo_autor), 0) + 1 AS prox FROM autores")->fetch_assoc()["prox"];
                     $stmt = $conexao->prepare("INSERT INTO autores (codigo_autor, autoria, nome_autor) VALUES (?, ?, ?)");
