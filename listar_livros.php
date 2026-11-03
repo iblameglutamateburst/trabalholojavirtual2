@@ -12,7 +12,6 @@ $busca = isset($_GET["busca"]) ? mysqli_real_escape_string($conexao, $_GET["busc
 
 if (isset($_GET["excluir"])) {
     $isbn = (int)$_GET["excluir"];
-    // apaga primeiro os registros ligados ao livro (evita erro de chave estrangeira)
     $conexao->query("DELETE FROM autores WHERE autoria = $isbn");
     $conexao->query("DELETE FROM editora WHERE publicacao = $isbn");
     $conexao->query("DELETE FROM favoritos WHERE isbn = $isbn");
