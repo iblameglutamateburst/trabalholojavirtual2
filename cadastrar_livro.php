@@ -36,7 +36,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $mensagem = "Já existe um livro com este ISBN.";
             $tipo = "erro";
         } else {
-            // upload da capa
             $foto = "";
             if (!empty($_FILES["foto"]["name"])) {
                 $ext = strtolower(pathinfo($_FILES["foto"]["name"], PATHINFO_EXTENSION));
