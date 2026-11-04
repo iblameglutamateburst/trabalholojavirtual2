@@ -191,6 +191,17 @@ async function buscarLivro() {
         aviso.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
+    function preencher(dados) {
+        document.querySelector("[name=titulo]").value = dados.title || "";
+        document.querySelector("[name=descricao]").value = dados.description || "";
+        if (dados.authors && dados.authors.length) {
+            document.querySelector("[name=nome_autor]").value = dados.authors[0];
+        }
+        if (dados.publishers && dados.publishers.length) {
+            document.querySelector("[name=nome_editora]").value = dados.publishers[0];
+        }
+    }
+
     if (isbn.length < 10) {
         mostrar("Digite um ISBN válido (10 ou 13 números).", "erro");
         return;
@@ -205,18 +216,15 @@ async function buscarLivro() {
     try {
         const r1 = await fetch("https://www.googleapis.com/books/v1/volumes?q=isbn:" + isbn);
         const j1 = await r1.json();
-        if (j1.totalItems > 0) {
-            dados = j1.items[0].volumeInfo;
-        }
+        if (j1.totalItems > 0) dados = j1.items[0].volumeInfo;
     } catch (e) {}
 
     if (!dados) {
         try {
             const r2 = await fetch("https://openlibrary.org/api/books?bibkeys=ISBN:" + isbn + "&format=json&jscmd=data");
             const j2 = await r2.json();
-            const chave = "ISBN:" + isbn;
-            if (j2[chave]) {
-                const l = j2[chave];
+            const l = j2["ISBN:" + isbn];
+            if (l) {
                 dados = {
                     title: l.title,
                     authors: (l.authors || []).map(a => a.name),
@@ -228,19 +236,27 @@ async function buscarLivro() {
     }
 
     if (!dados) {
-        mostrar("Não encontramos este ISBN nas bases públicas. Preencha os campos manualmente.", "erro");
+        try {
+            const r3 = await fetch("https://openlibrary.org/search.json?q=" + isbn + "&limit=1");
+            const j3 = await r3.json();
+            if (j3.docs && j3.docs.length > 0) {
+                const d = j3.docs[0];
+                dados = {
+                    title: d.title,
+                    authors: d.author_name || [],
+                    publishers: d.publisher ? [d.publisher[0]] : [],
+                    description: ""
+                };
+            }
+        } catch (e) {}
+    }
+
+    if (!dados) {
+        mostrar("ISBN não encontrado nas bases públicas. Confira se digitou o ISBN do livro impresso (não o e-ISBN) ou preencha manualmente.", "erro");
         return;
     }
 
-    document.querySelector("[name=titulo]").value = dados.title || "";
-    document.querySelector("[name=descricao]").value = dados.description || "";
-    if (dados.authors && dados.authors.length) {
-        document.querySelector("[name=nome_autor]").value = dados.authors[0];
-    }
-    if (dados.publishers && dados.publishers.length) {
-        document.querySelector("[name=nome_editora]").value = dados.publishers[0];
-    }
-
+    preencher(dados);
     mostrar("Dados preenchidos automaticamente. Confira e complete o que faltar.", "ok");
 }
 </script>
