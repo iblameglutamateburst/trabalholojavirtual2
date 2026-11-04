@@ -176,24 +176,72 @@ $conexao->close();
         </div>
     </main>
 
+<div id="aviso-api" class="mensagem" style="display:none;"></div>
+
 <script>
 async function buscarLivro() {
-    const isbn = document.querySelector("[name=isbn]").value;
-    if (!isbn) { alert("Digite o ISBN primeiro."); return; }
+    const campoIsbn = document.querySelector("[name=isbn]");
+    const isbn = campoIsbn.value.replace(/\D/g, "");
+    const aviso = document.getElementById("aviso-api");
 
-    const resposta = await fetch("https://www.googleapis.com/books/v1/volumes?q=isbn:" + isbn);
-    const dados = await resposta.json();
-
-    if (dados.totalItems > 0) {
-        const info = dados.items[0].volumeInfo;
-        document.querySelector("[name=titulo]").value = info.title || "";
-        document.querySelector("[name=descricao]").value = info.description || "";
-        if (info.authors) document.querySelector("[name=nome_autor]").value = info.authors[0];
-        if (info.publisher) document.querySelector("[name=nome_editora]").value = info.publisher;
-        alert("Dados preenchidos pela API do Google Books!");
-    } else {
-        alert("Livro não encontrado na API do Google Books.");
+    function mostrar(mensagem, tipo) {
+        aviso.textContent = mensagem;
+        aviso.className = "mensagem " + tipo;
+        aviso.style.display = "block";
+        aviso.scrollIntoView({ behavior: "smooth", block: "center" });
     }
+
+    if (isbn.length < 10) {
+        mostrar("Digite um ISBN válido (10 ou 13 números).", "erro");
+        return;
+    }
+
+    aviso.className = "mensagem ok";
+    aviso.textContent = "Buscando dados do livro...";
+    aviso.style.display = "block";
+
+    let dados = null;
+
+    try {
+        const r1 = await fetch("https://www.googleapis.com/books/v1/volumes?q=isbn:" + isbn);
+        const j1 = await r1.json();
+        if (j1.totalItems > 0) {
+            dados = j1.items[0].volumeInfo;
+        }
+    } catch (e) {}
+
+    if (!dados) {
+        try {
+            const r2 = await fetch("https://openlibrary.org/api/books?bibkeys=ISBN:" + isbn + "&format=json&jscmd=data");
+            const j2 = await r2.json();
+            const chave = "ISBN:" + isbn;
+            if (j2[chave]) {
+                const l = j2[chave];
+                dados = {
+                    title: l.title,
+                    authors: (l.authors || []).map(a => a.name),
+                    publishers: (l.publishers || []).map(p => p.name),
+                    description: l.notes || ""
+                };
+            }
+        } catch (e) {}
+    }
+
+    if (!dados) {
+        mostrar("Não encontramos este ISBN nas bases públicas. Preencha os campos manualmente.", "erro");
+        return;
+    }
+
+    document.querySelector("[name=titulo]").value = dados.title || "";
+    document.querySelector("[name=descricao]").value = dados.description || "";
+    if (dados.authors && dados.authors.length) {
+        document.querySelector("[name=nome_autor]").value = dados.authors[0];
+    }
+    if (dados.publishers && dados.publishers.length) {
+        document.querySelector("[name=nome_editora]").value = dados.publishers[0];
+    }
+
+    mostrar("Dados preenchidos automaticamente. Confira e complete o que faltar.", "ok");
 }
 </script>
 </body>
