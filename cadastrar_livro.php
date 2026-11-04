@@ -252,7 +252,7 @@ async function buscarLivro() {
     }
 
     if (!dados) {
-        mostrar("ISBN não encontrado nas bases públicas. Confira se digitou o ISBN do livro impresso (não o e-ISBN) ou preencha manualmente.", "erro");
+        mostrar("ISBN não encontrado nas bases públicas. Confira se digitou o ISBN do livro impresso (não  e-ISBN) ou preencha manualmente.", "erro");
         return;
     }
 
