@@ -109,7 +109,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $autor_atual = $nome_autor;
             $editora_atual = $nome_editora;
         } else {
-            $mensagem = "Erro ao atualizar o livro: " . $conexao->error;
+            $mensagem = "Erro ao atualzar o livro: " . $conexao->error;
             $tipo = "erro";
         }
     }
