@@ -52,11 +52,6 @@ $conexao->close();
     <main>
         <h2>Minha conta</h2>
 
-        <div class="abas-conta">
-            <a href="conta.php" class="<?= $aba === "perfil" ? "aba-ativa" : "" ?>">👤 Perfil</a>
-            <a href="conta.php?aba=favoritos" class="<?= $aba === "favoritos" ? "aba-ativa" : "" ?>">❤ Favoritos</a>
-        </div>
-
         <?php if ($aba === "perfil"): ?>
 
         <div class="conta-grid">
