@@ -27,7 +27,7 @@ $autor_atual = $conexao->query("SELECT nome_autor FROM autores WHERE autoria = $
 $editora_atual = $conexao->query("SELECT nome FROM editora WHERE publicacao = $isbn ORDER BY codigo_editora DESC LIMIT 1")->fetch_assoc()["nome"] ?? "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $custo = (float)str_replace(",", ".", $_POST["custo"]);
+    $custo = (float)str_replace(",", ".", preg_replace('/[^0-9,.]/', '', $_POST["custo"]));
     $titulo = trim($_POST["titulo"]);
     $categoria = trim($_POST["categoria"]);
     $estoque = max(0, (int)$_POST["estoque"]);
@@ -57,32 +57,45 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         $stmt = $conexao->prepare("UPDATE livros SET titulo = ?, custo = ?, categoria = ?, descricao = ?, estoque = ? WHERE isbn = ?");
         $stmt->bind_param("sdssii", $titulo, $custo, $categoria, $descricao, $estoque, $isbn);
+        $ok = $stmt->execute();
+        $stmt->close();
 
-        if ($stmt->execute()) {
+        if ($ok) {
             if ($nome_autor != "") {
-                $stmt2 = $conexao->prepare("UPDATE autores SET nome_autor = ? WHERE autoria = ?");
-                $stmt2->bind_param("si", $nome_autor, $isbn);
+                $stmt2 = $conexao->prepare("SELECT codigo_autor FROM autores WHERE autoria = ? LIMIT 1");
+                $stmt2->bind_param("i", $isbn);
                 $stmt2->execute();
-                if ($stmt2->affected_rows == 0) {
+                $linha = $stmt2->get_result()->fetch_assoc();
+                $stmt2->close();
+
+                if ($linha) {
+                    $stmt2 = $conexao->prepare("UPDATE autores SET nome_autor = ? WHERE codigo_autor = ?");
+                    $stmt2->bind_param("si", $nome_autor, $linha["codigo_autor"]);
+                } else {
                     $prox = (int)$conexao->query("SELECT COALESCE(MAX(codigo_autor), 0) + 1 AS prox FROM autores")->fetch_assoc()["prox"];
-                    $stmt3 = $conexao->prepare("INSERT INTO autores (codigo_autor, autoria, nome_autor) VALUES (?, ?, ?)");
-                    $stmt3->bind_param("iis", $prox, $isbn, $nome_autor);
-                    $stmt3->execute();
-                    $stmt3->close();
+                    $stmt2 = $conexao->prepare("INSERT INTO autores (codigo_autor, autoria, nome_autor) VALUES (?, ?, ?)");
+                    $stmt2->bind_param("iis", $prox, $isbn, $nome_autor);
                 }
+                $stmt2->execute();
                 $stmt2->close();
             }
+
             if ($nome_editora != "") {
-                $stmt2 = $conexao->prepare("UPDATE editora SET nome = ? WHERE publicacao = ?");
-                $stmt2->bind_param("si", $nome_editora, $isbn);
+                $stmt2 = $conexao->prepare("SELECT codigo_editora FROM editora WHERE publicacao = ? LIMIT 1");
+                $stmt2->bind_param("i", $isbn);
                 $stmt2->execute();
-                if ($stmt2->affected_rows == 0) {
+                $linha = $stmt2->get_result()->fetch_assoc();
+                $stmt2->close();
+
+                if ($linha) {
+                    $stmt2 = $conexao->prepare("UPDATE editora SET nome = ? WHERE codigo_editora = ?");
+                    $stmt2->bind_param("si", $nome_editora, $linha["codigo_editora"]);
+                } else {
                     $prox = (int)$conexao->query("SELECT COALESCE(MAX(codigo_editora), 0) + 1 AS prox FROM editora")->fetch_assoc()["prox"];
-                    $stmt3 = $conexao->prepare("INSERT INTO editora (codigo_editora, nome, publicacao) VALUES (?, ?, ?)");
-                    $stmt3->bind_param("isi", $prox, $nome_editora, $isbn);
-                    $stmt3->execute();
-                    $stmt3->close();
+                    $stmt2 = $conexao->prepare("INSERT INTO editora (codigo_editora, nome, publicacao) VALUES (?, ?, ?)");
+                    $stmt2->bind_param("isi", $prox, $nome_editora, $isbn);
                 }
+                $stmt2->execute();
                 $stmt2->close();
             }
 
@@ -96,10 +109,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $autor_atual = $nome_autor;
             $editora_atual = $nome_editora;
         } else {
-            $mensagem = "Erro ao atualizar o livro.";
+            $mensagem = "Erro ao atualizar o livro: " . $conexao->error;
             $tipo = "erro";
         }
-        $stmt->close();
     }
 }
 
