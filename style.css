@@ -1987,3 +1987,18 @@ a.botao-favorito:hover {
     background: var(--roxo-escuro);
     color: var(--branco);
 }
+
+#aviso-api {
+    margin-top: 16px;
+    text-align: center;
+}
+
+#aviso-api.erro {
+    background: #feecec;
+    color: #b91c1c;
+}
+
+#aviso-api.ok {
+    background: #d9f2dc;
+    color: #2e7d32;
+}
