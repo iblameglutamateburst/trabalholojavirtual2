@@ -1,11 +1,9 @@
 <?php
 session_start();
-
 if (!isset($_SESSION["id"]) || $_SESSION["admin"] != 1) {
     header("Location: login.php");
     exit;
 }
-
 require_once "conexao.php";
 
 $mensagem = "";
@@ -49,8 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 }
             }
 
-            $stmt = $conexao->prepare("INSERT INTO livros (isbn, edição, custo, titulo, foto, categoria, descricao, estoque)
-                                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $conexao->prepare("INSERT INTO livros (isbn, edição, custo, titulo, foto, categoria, descricao, estoque) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->bind_param("iidssssi", $isbn, $edicao, $custo, $titulo, $foto, $categoria, $descricao, $estoque);
             $ok = $stmt->execute();
             $stmt->close();
@@ -70,7 +67,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     $stmt->execute();
                     $stmt->close();
                 }
-
                 $mensagem = "Livro cadastrado com sucesso!";
                 $tipo = "ok";
             } else {
@@ -91,38 +87,39 @@ $conexao->close();
     <title>Dreams Books - Cadastrar Livro</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
     <?php include "header.php"; ?>
-
     <main>
         <div class="formulario">
             <h1>Cadastrar livro</h1>
+
+            <div id="aviso-api" class="mensagem" style="display:none;"></div>
+
             <form method="POST" enctype="multipart/form-data">
                 <label>ISBN</label>
                 <div class="campo">
                     <span class="icone">🔢</span>
-                    <input type="number" name="isbn" placeholder="9788595081512" required>
+                    <input type="text" id="campo-isbn" name="isbn" placeholder="9788595081512" inputmode="numeric" autocomplete="off" required>
                 </div>
-
                 <button type="button" onclick="buscarLivro()" class="botao-google">🔍 Buscar título e sinopse pelo ISBN</button>
 
                 <label>Título</label>
                 <div class="campo">
                     <span class="icone">📖</span>
-                    <input type="text" name="titulo" required>
+                    <input type="text" id="campo-titulo" name="titulo" autocomplete="off" required>
                 </div>
+                <button type="button" onclick="buscarPorTitulo()" class="botao-google">🔍 Buscar sinopse pelo título</button>
 
                 <label>Autor</label>
                 <div class="campo">
                     <span class="icone">✍️</span>
-                    <input type="text" name="nome_autor">
+                    <input type="text" id="campo-autor" name="nome_autor">
                 </div>
 
                 <label>Editora</label>
                 <div class="campo">
                     <span class="icone">🏢</span>
-                    <input type="text" name="nome_editora">
+                    <input type="text" id="campo-editora" name="nome_editora">
                 </div>
 
                 <label>Categoria</label>
@@ -161,7 +158,7 @@ $conexao->close();
                 </div>
 
                 <label>Sinopse</label>
-                <textarea name="descricao" rows="5" placeholder="Sinopse do livro..."></textarea>
+                <textarea id="campo-descricao" name="descricao" rows="5" placeholder="Sinopse do livro..."></textarea>
 
                 <button type="submit">Cadastrar livro</button>
             </form>
@@ -176,89 +173,90 @@ $conexao->close();
         </div>
     </main>
 
-<div id="aviso-api" class="mensagem" style="display:none;"></div>
-
-<script>
-async function buscarLivro() {
-    const campoIsbn = document.querySelector("[name=isbn]");
-    const isbn = campoIsbn.value.replace(/\D/g, "");
-    const aviso = document.getElementById("aviso-api");
-
-    function mostrar(mensagem, tipo) {
-        aviso.textContent = mensagem;
+    <script>
+    function mostrarAviso(msg, tipo) {
+        var aviso = document.getElementById("aviso-api");
+        if (!aviso) { alert(msg); return; }
+        aviso.textContent = msg;
         aviso.className = "mensagem " + tipo;
         aviso.style.display = "block";
         aviso.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
-    function preencher(dados) {
-        document.querySelector("[name=titulo]").value = dados.title || "";
-        document.querySelector("[name=descricao]").value = dados.description || "";
-        if (dados.authors && dados.authors.length) {
-            document.querySelector("[name=nome_autor]").value = dados.authors[0];
+    function preencher(id, valor) {
+        var campo = document.getElementById(id);
+        if (campo && valor) campo.value = valor;
+    }
+
+    async function buscarLivro() {
+        var isbn = document.getElementById("campo-isbn").value.replace(/\D/g, "");
+
+        if (isbn.length !== 10 && isbn.length !== 13) {
+            mostrarAviso("O ISBN precisa ter 10 ou 13 números.", "erro");
+            return;
         }
-        if (dados.publishers && dados.publishers.length) {
-            document.querySelector("[name=nome_editora]").value = dados.publishers[0];
+
+        mostrarAviso("Buscando...", "ok");
+
+        try {
+            var resp = await fetch("buscar_isbn.php?isbn=" + isbn);
+            var dados = await resp.json();
+
+            if (!dados.ok) {
+                mostrarAviso(dados.erro || "ISBN não encontrado.", "erro");
+                return;
+            }
+
+            preencher("campo-titulo", dados.titulo);
+            preencher("campo-autor", dados.autor);
+            preencher("campo-editora", dados.editora);
+            preencher("campo-descricao", dados.descricao);
+
+            var faltando = dados.faltando || [];
+            if (faltando.length) {
+                mostrarAviso("Preenchido via " + dados.fonte + ". Falta preencher: " + faltando.join(", ") + ".", "erro");
+            } else {
+                mostrarAviso("Dados preenchidos via " + dados.fonte + ". Confira antes de salvar.", "ok");
+            }
+        } catch (e) {
+            mostrarAviso("Erro ao buscar: " + e.message, "erro");
         }
     }
 
-    if (isbn.length < 10) {
-        mostrar("Digite um ISBN válido (10 ou 13 números).", "erro");
-        return;
-    }
+    async function buscarPorTitulo() {
+        var titulo = document.getElementById("campo-titulo").value.trim();
 
-    aviso.className = "mensagem ok";
-    aviso.textContent = "Buscando dados do livro...";
-    aviso.style.display = "block";
+        if (titulo.length < 3) {
+            mostrarAviso("Digite pelo menos 3 letras do título.", "erro");
+            return;
+        }
 
-    let dados = null;
+        mostrarAviso("Buscando por título...", "ok");
 
-    try {
-        const r1 = await fetch("https://www.googleapis.com/books/v1/volumes?q=isbn:" + isbn);
-        const j1 = await r1.json();
-        if (j1.totalItems > 0) dados = j1.items[0].volumeInfo;
-    } catch (e) {}
-
-    if (!dados) {
         try {
-            const r2 = await fetch("https://openlibrary.org/api/books?bibkeys=ISBN:" + isbn + "&format=json&jscmd=data");
-            const j2 = await r2.json();
-            const l = j2["ISBN:" + isbn];
-            if (l) {
-                dados = {
-                    title: l.title,
-                    authors: (l.authors || []).map(a => a.name),
-                    publishers: (l.publishers || []).map(p => p.name),
-                    description: l.notes || ""
-                };
+            var resp = await fetch("buscar_isbn.php?titulo=" + encodeURIComponent(titulo));
+            var dados = await resp.json();
+
+            if (!dados.ok) {
+                mostrarAviso(dados.erro || "Nenhum resultado para este título.", "erro");
+                return;
             }
-        } catch (e) {}
-    }
 
-    if (!dados) {
-        try {
-            const r3 = await fetch("https://openlibrary.org/search.json?q=" + isbn + "&limit=1");
-            const j3 = await r3.json();
-            if (j3.docs && j3.docs.length > 0) {
-                const d = j3.docs[0];
-                dados = {
-                    title: d.title,
-                    authors: d.author_name || [],
-                    publishers: d.publisher ? [d.publisher[0]] : [],
-                    description: ""
-                };
+            preencher("campo-titulo", dados.titulo);
+            preencher("campo-autor", dados.autor);
+            preencher("campo-editora", dados.editora);
+            preencher("campo-descricao", dados.descricao);
+
+            var faltando = dados.faltando || [];
+            if (faltando.length) {
+                mostrarAviso("Preenchido via " + dados.fonte + ". Falta preencher: " + faltando.join(", ") + ".", "erro");
+            } else {
+                mostrarAviso("Preenchido via " + dados.fonte + ". Confira os dados.", "ok");
             }
-        } catch (e) {}
+        } catch (e) {
+            mostrarAviso("Erro ao buscar: " + e.message, "erro");
+        }
     }
-
-    if (!dados) {
-        mostrar("ISBN não encontrado nas bases públicas. Confira se digitou o ISBN do livro impresso (não  e-ISBN) ou preencha manualmente.", "erro");
-        return;
-    }
-
-    preencher(dados);
-    mostrar("Dados preenchidos automaticamente. Confira e complete o que faltar.", "ok");
-}
-</script>
+    </script>
 </body>
 </html>
