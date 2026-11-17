@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Tempo de geração: 17/11/2026 às 19:16
+-- Tempo de geração: 17/11/2026 às 21:38
 -- Versão do servidor: 10.4.32-MariaDB
 -- Versão do PHP: 8.2.12
 
@@ -165,7 +165,9 @@ CREATE TABLE `itens_pedido` (
 
 INSERT INTO `itens_pedido` (`id`, `pedido_id`, `isbn`, `quantidade`, `preco_unitario`) VALUES
 (1, 1, 9788598078304, 1, 10.99),
-(2, 2, 9788598078304, 1, 10.99);
+(2, 2, 9788598078304, 1, 10.99),
+(3, 3, 547249640, 2, 85.99),
+(4, 4, 547249640, 1, 85.99);
 
 -- --------------------------------------------------------
 
@@ -190,9 +192,9 @@ CREATE TABLE `livros` (
 --
 
 INSERT INTO `livros` (`isbn`, `edição`, `custo`, `titulo`, `acervo`, `foto`, `categoria`, `descricao`, `estoque`) VALUES
-(547249640, 1, 85.99, '1984', NULL, '', 'Ficção Cientifica, Política, Distopia', 'A obra é uma crítica severa aos regimes totalitários (como o stalinismo e o nazismo) e retrata uma sociedade sob controle absoluto.', 10),
+(547249640, 1, 85.99, '1984', NULL, 'fotos/547249640.jpg', 'Ficção Cientifica, Política, Distopia', 'A obra é uma crítica severa aos regimes totalitários (como o stalinismo e o nazismo) e retrata uma sociedade sob controle absoluto.', 7),
 (2147483647, 1, 95.99, 'O pequeno príncipe', 2, 'fotos/9788595081512.webp', 'Fantasia', 'O pequeno príncipe conta a história de um menino vindo de um pequeno asteroide que encontra um piloto de avião perdido no deserto do Saara. O príncipe narra suas aventuras em diferentes planetas em busca de um carneiro para manter o seu asteroide livre da infestação de baobás e, assim, proteger a rosa que cultiva. Mas, a cada novo planeta visitado, conhece personagens como o rei, o geógrafo e o acendedor de lampiões, que fazem com que reveja seus propósitos e sua opinião sobre os adultos. Até encontrar a raposa, com quem aprende o significado da palavra \"cativar\". Desde a sua primeira publicação, em 1943, O pequeno príncipe faz parte da formação de uma legião de leitores em todo o mundo.', 10),
-(9788598078304, 1, 10.99, 'Crepúsculo', NULL, '', 'Fantasia, Romance, Terror', 'Bella Swan, de 17 anos, muda-se de Phoenix para a chuvosa e nublada cidade de Forks, Washington, para morar com seu pai. Na nova escola, ela fica fascinada e intimidada por Edward Cullen, um rapaz misterioso e incrivelmente belo. Ela logo descobre que ele e sua família são vampiros \"vegetarianos\" (que se alimentam apenas de sangue animal). Os dois se apaixonam perdidamente, mas a vida de Bella entra em grave perigo quando um vampiro nômade chamado James a persegue para matá-la.', 8);
+(9788598078304, 1, 85.99, 'Crepúsculo', NULL, 'fotos/9788598078304.jpg', 'Fantasia, Romance, Terror', 'Bella Swan, de 17 anos, muda-se de Phoenix para a chuvosa e nublada cidade de Forks, Washington, para morar com seu pai. Na nova escola, ela fica fascinada e intimidada por Edward Cullen, um rapaz misterioso e incrivelmente belo. Ela logo descobre que ele e sua família são vampiros \"vegetarianos\" (que se alimentam apenas de sangue animal). Os dois se apaixonam perdidamente, mas a vida de Bella entra em grave perigo quando um vampiro nômade chamado James a persegue para matá-la.', 8);
 
 -- --------------------------------------------------------
 
@@ -227,7 +229,9 @@ CREATE TABLE `pedidos` (
 
 INSERT INTO `pedidos` (`id`, `usuario_id`, `total`, `forma_pagamento`, `data_pedido`, `status`) VALUES
 (1, 1, 10.99, 'Pix', '2026-11-10 16:52:48', 'Processado'),
-(2, 1, 10.99, 'Pix', '2026-11-10 16:56:35', 'Processado');
+(2, 1, 10.99, 'Pix', '2026-11-10 16:56:35', 'Processado'),
+(3, 1, 171.98, 'Pix', '2026-11-17 19:06:49', 'Processado'),
+(4, 1, 100.99, 'Pix', '2026-11-17 19:16:39', 'Processado');
 
 -- --------------------------------------------------------
 
@@ -251,7 +255,10 @@ CREATE TABLE `usuario` (
 
 INSERT INTO `usuario` (`id`, `nome`, `email`, `senha`, `admin`, `verificado`, `token`) VALUES
 (1, 'Arthur Ritter', 'arthurritterbranden@gmail.com', '$2y$10$nHJFZh.KdVREkFkGxzW6juEPngAcIpzMk/Tc0QQB5tN7vOcHblAJe', 1, 1, ''),
-(2, 'Bruna Ritter', 'bruna@gmial.com', '$2y$10$I528rKb0kI7twJyDUivuR.957oC6THzIPmPVNwTPWX37pUilkEely', 0, 1, '');
+(2, 'Bruna Ritter', 'bruna@gmial.com', '$2y$10$I528rKb0kI7twJyDUivuR.957oC6THzIPmPVNwTPWX37pUilkEely', 0, 1, ''),
+(3, 'admin', 'admin@gmail.com', '$2y$10$2nUY4LPMJoeEwi8ytO5Lf.iHKPX6DI7i0G8kUqrSktdcS90Z7sIfK', 1, 1, ''),
+(4, 'Manuela Correa', 'manuelacorrea208@gmail.com', '$2y$10$GkXeqgrWbiYYQoIkedJLjekfGlw4nUytwTrlo8vIy3E61kT0NzWaW', 1, 1, ''),
+(5, 'Vivian Caroline', 'Viviancaroline585@gmail.com', '$2y$10$aXsYTtq.H8wSxi3Y7fOx2.llwNowvLY8FtklYK.ykffn1e/AyDTQ2', 1, 1, '');
 
 --
 -- Índices para tabelas despejadas
@@ -381,7 +388,7 @@ ALTER TABLE `exemplares`
 -- AUTO_INCREMENT de tabela `itens_pedido`
 --
 ALTER TABLE `itens_pedido`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de tabela `newsletter`
@@ -393,13 +400,13 @@ ALTER TABLE `newsletter`
 -- AUTO_INCREMENT de tabela `pedidos`
 --
 ALTER TABLE `pedidos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de tabela `usuario`
 --
 ALTER TABLE `usuario`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- Restrições para tabelas despejadas
