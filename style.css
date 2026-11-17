@@ -1,16 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,700&family=Nunito:wght@400;600;700;800&display=swap');
 
 :root {
-    --roxo-fundo: #8a7fc8;
+    --roxo-fundo: #8379cd;
     --roxo-claro: #d1c9f4;
-    --roxo-card: #d6c9f5;
+    --roxo-card: #DDCFFF;
     --roxo-escuro: #4d1933;
     --roxo-botao: #836aaf;
     --roxo-botao-escuro: #6d559a;
     --amarelo: #fce38a;
-    --amarelo-forte: #ffd700;
-    --texto: #3d3560;
-    --texto-suave: #4a3f75;
+    --amarelo-forte: #f9d86E;
+    --texto: #4e2780;
+    --texto-suave: #835db7;
     --branco: #ffffff;
 }
 
@@ -1986,19 +1986,4 @@ a.botao-favorito:hover {
 .botao-limpar:hover {
     background: var(--roxo-escuro);
     color: var(--branco);
-}
-
-#aviso-api {
-    margin-top: 16px;
-    text-align: center;
-}
-
-#aviso-api.erro {
-    background: #feecec;
-    color: #b91c1c;
-}
-
-#aviso-api.ok {
-    background: #d9f2dc;
-    color: #2e7d32;
 }
