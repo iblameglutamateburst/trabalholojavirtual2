@@ -7,12 +7,6 @@
         <p class="footer-slogan">Entre páginas, novos sonhos</p>
     </div>
 
-    <div class="footer-links">
-        <a href="#">Política de privacidade</a>
-        <a href="#">Termos de uso</a>
-        <a href="#">Ajuda</a>
-    </div>
-
     <div class="footer-news">
         <label>Receba nossas novidades</label>
         <form method="post" action="newsletter.php">

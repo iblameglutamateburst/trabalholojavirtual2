@@ -1987,3 +1987,262 @@ a.botao-favorito:hover {
     background: var(--roxo-escuro);
     color: var(--branco);
 }
+
+.tabela-livros img,
+table img {
+    width: 60px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 4px;
+    display: block;
+}
+
+.campo { position: relative; }
+.campo .icone { left: 12px; }
+
+main .card-form,
+.card-form {
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 24px 26px;
+    box-sizing: border-box;
+}
+
+main .card-form .campo,
+.card-form .campo {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+main .card-form .campo input,
+.card-form .campo input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+main .card-form input[type="file"],
+.card-form input[type="file"] {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+main .card-form button,
+.card-form button {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.conta-page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding-bottom: 40px;
+}
+
+.conta-page h2 {
+    color: #4d1933;
+    font-size: 24px;
+    margin: 0 0 18px;
+}
+
+.conta-page h3 {
+    color: #4d1933;
+    font-size: 17px;
+    margin: 28px 0 14px;
+}
+
+.perfil-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(77, 25, 51, .09);
+    box-sizing: border-box;
+}
+
+.perfil-capa {
+    height: 76px;
+    margin: -24px -24px 0 -24px;
+    border-radius: 16px 16px 0 0;
+    background: linear-gradient(135deg, #7b2d5e 0%, #b04d8c 100%);
+}
+
+.perfil-topo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: -32px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #f0e8f4;
+}
+
+.perfil-avatar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    background: #fff;
+    border: 4px solid #fff;
+    box-shadow: 0 3px 12px rgba(77, 25, 51, .18);
+    color: #7b2d5e;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.perfil-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    padding-top: 32px;
+}
+
+.perfil-nome {
+    font-size: 19px;
+    font-weight: 700;
+    color: #4d1933;
+}
+
+.perfil-email {
+    font-size: 13px;
+    color: #8a7a90;
+    word-break: break-all;
+}
+
+.selo-admin {
+    align-self: flex-start;
+    margin-top: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #f5eef8;
+    color: #7b2d5e;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+}
+
+.perfil-stats {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.stat-box {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 14px 10px;
+    background: #faf6fc;
+    border: 1px solid #f0e8f4;
+    border-radius: 12px;
+}
+
+.stat-box strong {
+    font-size: 22px;
+    color: #7b2d5e;
+    line-height: 1.1;
+}
+
+.stat-box span {
+    font-size: 12px;
+    color: #8a7a90;
+}
+
+.acoes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.acao-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 16px;
+    background: #fff;
+    border: 1px solid #ece1f2;
+    border-radius: 12px;
+    color: #4d1933;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color .16s, background .16s, box-shadow .16s, transform .16s;
+}
+
+.acao-icone {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: #f5eef8;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.acao-btn:hover {
+    border-color: #c9a3d8;
+    background: #fdfaff;
+    box-shadow: 0 4px 14px rgba(123, 45, 94, .13);
+    transform: translateY(-1px);
+}
+
+.acao-btn.sair {
+    color: #b93c2e;
+    border-color: #f3dcd8;
+}
+
+.acao-btn.sair .acao-icone {
+    background: #fdeeec;
+}
+
+.acao-btn.sair:hover {
+    background: #fff8f7;
+    border-color: #e8bcb5;
+    box-shadow: 0 4px 14px rgba(185, 60, 46, .12);
+}
+
+@media (max-width: 560px) {
+    .acoes-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .perfil-topo {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .perfil-info {
+        padding-top: 0;
+    }
+}
+
+.mc-banner {
+    height: 6px;
+    margin: -24px -24px 0 -24px;
+    border-radius: 16px 16px 0 0;
+    background: #7b2d5e;
+}
+
+.mc-topo {
+    margin-top: 0;
+    padding-top: 0;
+    align-items: center;
+    padding-bottom: 18px;
+}
+
+@media (max-width: 560px) {
+    .mc-topo {
+        margin-top: 0;
+    }
+}

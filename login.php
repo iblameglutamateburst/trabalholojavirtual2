@@ -86,10 +86,6 @@ $conexao->close();
                 </div>
             <?php endif; ?>
 
-            <div class="divisor">ou</div>
-
-            <button type="button" class="botao-google">🔵 Entrar com Google</button>
-
             <div class="rodape">
                 Não tem uma conta? <a href="cadastro.php">Cadastre-se</a>
             </div>

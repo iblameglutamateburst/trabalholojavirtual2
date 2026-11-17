@@ -8,21 +8,63 @@ if (!isset($_SESSION["id"]) || $_SESSION["admin"] != 1) {
 
 require_once "conexao.php";
 
-$busca = isset($_GET["busca"]) ? mysqli_real_escape_string($conexao, $_GET["busca"]) : "";
+if (is_file(__DIR__ . "/_fotos.php")) {
+    require_once "_fotos.php";
+}
+
+if (!function_exists("foto_url")) {
+    function foto_url($foto) {
+        if (empty($foto)) {
+            return null;
+        }
+
+        $foto = str_replace("\\", "/", $foto);
+
+        $caminho = __DIR__ . "/" . ltrim($foto, "/");
+        if (is_file($caminho)) {
+            return $foto;
+        }
+
+        $alt = "fotos/" . basename($foto);
+        if (is_file(__DIR__ . "/" . $alt)) {
+            return $alt;
+        }
+
+        return null;
+    }
+}
+
+$busca = isset($_GET["busca"]) ? trim($_GET["busca"]) : "";
 
 if (isset($_GET["excluir"])) {
-    $isbn = (int)$_GET["excluir"];
-    $conexao->query("DELETE FROM autores WHERE autoria = $isbn");
-    $conexao->query("DELETE FROM editora WHERE publicacao = $isbn");
-    $conexao->query("DELETE FROM favoritos WHERE isbn = $isbn");
-    $conexao->query("DELETE FROM avaliacoes WHERE isbn = $isbn");
-    $conexao->query("DELETE FROM livros WHERE isbn = $isbn");
+    $isbn_del = preg_replace('/\D/', '', $_GET["excluir"]);
+
+    if ($isbn_del !== "") {
+        $isbn_del = mysqli_real_escape_string($conexao, $isbn_del);
+
+        $conexao->query("DELETE FROM autores WHERE autoria = '$isbn_del'");
+        $conexao->query("DELETE FROM editora WHERE publicacao = '$isbn_del'");
+        $conexao->query("DELETE FROM favoritos WHERE isbn = '$isbn_del'");
+        $conexao->query("DELETE FROM avaliacoes WHERE isbn = '$isbn_del'");
+        $conexao->query("DELETE FROM livros WHERE isbn = '$isbn_del'");
+    }
+
+    header("Location: listar_livros.php?excluido=1");
+    exit;
 }
 
-$sql = "SELECT l.*, a.nome_autor FROM livros l LEFT JOIN autores a ON a.autoria = l.isbn";
-if ($busca != "") {
-    $sql .= " WHERE l.titulo LIKE '%$busca%' OR l.categoria LIKE '%$busca%' OR l.isbn = " . (int)$busca;
+$sql = "SELECT l.*,
+               (SELECT GROUP_CONCAT(nome_autor SEPARATOR ', ')
+                FROM autores WHERE autoria = l.isbn) AS nome_autor
+        FROM livros l";
+
+if ($busca !== "") {
+    $b = mysqli_real_escape_string($conexao, $busca);
+    $sql .= " WHERE l.titulo LIKE '%$b%'
+                 OR l.categoria LIKE '%$b%'
+                 OR l.isbn LIKE '%$b%'";
 }
+
 $sql .= " ORDER BY l.titulo";
 $resultado = $conexao->query($sql);
 
@@ -43,6 +85,18 @@ $conexao->close();
     <main>
         <h2>Livros cadastrados</h2>
 
+        <?php if (isset($_GET["excluido"])): ?>
+            <div class="mensagem ok">Livro excluído com sucesso.</div>
+        <?php endif; ?>
+
+        <?php if (isset($_GET["cadastrado"])): ?>
+            <div class="mensagem ok">Livro cadastrado com sucesso.</div>
+        <?php endif; ?>
+
+        <?php if (isset($_GET["editado"])): ?>
+            <div class="mensagem ok">Livro atualizado com sucesso.</div>
+        <?php endif; ?>
+
         <div class="acoes" style="margin-bottom:20px;">
             <a href="cadastrar_livro.php" class="botao-editar">+ Cadastrar novo livro</a>
         </div>
@@ -52,46 +106,57 @@ $conexao->close();
             <button type="submit">Pesquisar</button>
         </form>
 
-        <?php if ($resultado->num_rows > 0): ?>
-            <table>
-                <tr>
-                    <th>Capa</th>
-                    <th>Título</th>
-                    <th>ISBN</th>
-                    <th>Categoria</th>
-                    <th>Autor</th>
-                    <th>Preço</th>
-                    <th>Estoque</th>
-                    <th>Ações</th>
-                </tr>
-                <?php while ($livro = $resultado->fetch_assoc()): ?>
-                    <tr>
-                        <td>
-                            <?php if (!empty($livro["foto"]) && file_exists($livro["foto"])): ?>
-                                <img src="<?= $livro["foto"] ?>" style="width:45px;border-radius:6px;">
-                            <?php else: ?>
-                                📕
-                            <?php endif; ?>
-                        </td>
-                        <td><?= htmlspecialchars($livro["titulo"]) ?></td>
-                        <td><?= $livro["isbn"] ?></td>
-                        <td><?= htmlspecialchars($livro["categoria"] ?? "—") ?></td>
-                        <td><?= htmlspecialchars($livro["nome_autor"] ?? "—") ?></td>
-                        <td>R$ <?= number_format($livro["custo"], 2, ",", ".") ?></td>
-                        <td>
-                            <?php if ((int)$livro["estoque"] <= 2): ?>
-                                <span class="estoque-alerta">⚠️ <?= $livro["estoque"] ?></span>
-                            <?php else: ?>
-                                <?= $livro["estoque"] ?>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <a href="editar_livro.php?isbn=<?= $livro["isbn"] ?>" class="botao-editar">Editar</a>
-                            <a href="listar_livros.php?excluir=<?= $livro["isbn"] ?>&busca=<?= urlencode($busca) ?>" class="botao-excluir" onclick="return confirm('Excluir este livro e todos os seus vínculos?')">Excluir</a>
-                        </td>
-                    </tr>
-                <?php endwhile; ?>
-            </table>
+        <?php if ($resultado && $resultado->num_rows > 0): ?>
+            <div class="tabela-wrapper">
+                <table class="tabela-livros">
+                    <thead>
+                        <tr>
+                            <th>Capa</th>
+                            <th>Título</th>
+                            <th>ISBN</th>
+                            <th>Categoria</th>
+                            <th>Autor</th>
+                            <th>Preço</th>
+                            <th>Estoque</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($livro = $resultado->fetch_assoc()): ?>
+                            <?php $img = foto_url($livro["foto"] ?? ""); ?>
+                            <tr>
+                                <td>
+                                    <?php if ($img): ?>
+                                        <img src="<?= htmlspecialchars($img) ?>"
+                                             class="capa-mini"
+                                             alt="Capa de <?= htmlspecialchars($livro["titulo"]) ?>">
+                                    <?php else: ?>
+                                        <span class="capa-vazia">📕</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= htmlspecialchars($livro["titulo"]) ?></td>
+                                <td><?= htmlspecialchars($livro["isbn"]) ?></td>
+                                <td><?= htmlspecialchars($livro["categoria"] ?? "—") ?></td>
+                                <td><?= htmlspecialchars($livro["nome_autor"] ?? "—") ?></td>
+                                <td>R$ <?= number_format((float)$livro["custo"], 2, ",", ".") ?></td>
+                                <td>
+                                    <?php if ((int)$livro["estoque"] <= 2): ?>
+                                        <span class="estoque-alerta">⚠️ <?= (int)$livro["estoque"] ?></span>
+                                    <?php else: ?>
+                                        <?= (int)$livro["estoque"] ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="acoes-linha">
+                                    <a href="editar_livro.php?isbn=<?= urlencode($livro["isbn"]) ?>" class="botao-editar">Editar</a>
+                                    <a href="listar_livros.php?excluir=<?= urlencode($livro["isbn"]) ?>"
+                                       class="botao-excluir"
+                                       onclick="return confirm('Excluir este livro e todos os seus vínculos?')">Excluir</a>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
         <?php else: ?>
             <p class="nenhum">Nenhum livro encontrado.</p>
         <?php endif; ?>

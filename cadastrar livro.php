@@ -35,7 +35,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $mensagem = "Este ISBN já está cadastrado.";
             $tipo = "erro";
         } else {
-            $sql = "INSERT INTO livros (isbn, edição, custo, titulo, acervo)
+            $sql = "INSERT  INTO livros (isbn, edição, custo, titulo, acervo)
                     VALUES (?, ?, ?, ?, ?)";
             $stmt = $conexao->prepare($sql);
             $stmt->bind_param("iidsi", $isbn, $edicao, $custo, $titulo, $acervo);
