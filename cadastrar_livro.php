@@ -9,170 +9,157 @@ if (!isset($_SESSION["id"]) || $_SESSION["admin"] != 1) {
 require_once "conexao.php";
 require_once "_fotos.php";
 
-if (is_file(__DIR__ . "/_fotos.php")) {
-    require_once "_fotos.php";
-}
+$mensagem = "";
+$tipo = "";
 
-if (!function_exists("salvar_foto")) {
-    function salvar_foto($arquivo, $isbn, &$erro) {
-        if (!is_array($arquivo) || $arquivo["error"] === UPLOAD_ERR_NO_FILE) {
-            return null;
-        }
-
-        if ($arquivo["error"] !== UPLOAD_ERR_OK) {
-            $erro = "Falha no envio da imagem.";
-            return null;
-        }
-
-        $ext = strtolower(pathinfo($arquivo["name"], PATHINFO_EXTENSION));
-        $permitidas = ["jpg", "jpeg", "png", "gif", "webp"];
-
-        if (!in_array($ext, $permitidas, true)) {
-            $erro = "Formato inválido. Use JPG, PNG, GIF ou WEBP.";
-            return null;
-        }
-
-        $pasta = __DIR__ . "/fotos";
-        if (!is_dir($pasta)) {
-            @mkdir($pasta, 0777, true);
-        }
-
-        $nome = preg_replace('/\D/', '', (string)$isbn) . "_" . time() . "." . $ext;
-
-        if (!move_uploaded_file($arquivo["tmp_name"], $pasta . "/" . $nome)) {
-            $erro = "Não foi possível salvar a imagem.";
-            return null;
-        }
-
-        return "fotos/" . $nome;
-    }
-}
-
-$erro = "";
+$exemplares = $conexao->query("SELECT codigo_ex FROM exemplares ORDER BY codigo_ex");
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $isbn      = preg_replace('/\D/', '', $_POST["isbn"] ?? "");
-    $titulo    = trim($_POST["titulo"] ?? "");
-    $autor     = trim($_POST["autor"] ?? "");
-    $editora   = trim($_POST["editora"] ?? "");
-    $categoria = trim($_POST["categoria"] ?? "");
-    $custo     = (float)str_replace(",", ".", $_POST["custo"] ?? "0");
-    $estoque   = (int)($_POST["estoque"] ?? 0);
+    $isbn = intval($_POST["isbn"]);
+    $edicao = intval($_POST["edicao"]);
+    $custo = trim($_POST["custo"]);
+    $titulo = trim($_POST["titulo"]);
+    $acervo = intval($_POST["acervo"]);
 
-    if (strlen($isbn) !== 10 && strlen($isbn) !== 13) {
-        $erro = "O ISBN deve ter 10 ou 13 números.";
-    } else if ($titulo === "") {
-        $erro = "Informe o título do livro.";
+    $custo = str_replace(",", ".", $custo);
+
+    if ($isbn == 0 || $edicao == 0 || $custo == "" || $titulo == "" || $acervo == 0) {
+        $mensagem = "Preencha todos os campos.";
+        $tipo = "erro";
     } else {
-        $stmt = $conexao->prepare("SELECT isbn FROM livros WHERE isbn = ?");
-        $stmt->bind_param("s", $isbn);
+        $sql = "SELECT isbn FROM livros WHERE isbn = ?";
+
+        $stmt = $conexao->prepare($sql);
+        $stmt->bind_param("i", $isbn);
         $stmt->execute();
-        $stmt->store_result();
-
-        if ($stmt->num_rows > 0) {
-            $erro = "Já existe um livro com esse ISBN.";
-        }
-
-        $stmt->close();
-    }
-
-    $foto = "";
-
-    if ($erro === "") {
-        $erroFoto = "";
-        $enviada = salvar_foto($_FILES["foto"] ?? null, $isbn, $erroFoto);
-
-        if ($erroFoto !== "") {
-            $erro = $erroFoto;
-        } else if ($enviada !== null) {
-            $foto = $enviada;
-        }
-    }
-
-    if ($erro === "") {
-        $stmt = $conexao->prepare("INSERT INTO livros (isbn, titulo, custo, estoque, foto, categoria) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssdiss", $isbn, $titulo, $custo, $estoque, $foto, $categoria);
-
-        if (!$stmt->execute()) {
-            $erro = "Erro ao cadastrar: " . $stmt->error;
-        }
-
+        $resultado = $stmt->get_result();
         $stmt->close();
 
-        if ($erro === "") {
-            if ($autor !== "") {
-                $stmt = $conexao->prepare("INSERT INTO autores (autoria, nome_autor) VALUES (?, ?)");
-                $stmt->bind_param("ss", $isbn, $autor);
-                $stmt->execute();
+        if ($resultado->num_rows > 0) {
+            $mensagem = "Este ISBN já está cadastrado.";
+            $tipo = "erro";
+        } else {
+            $foto = "";
+            $erro_foto = "";
+            $foto = salvar_foto($_FILES["foto"] ?? null, (string)$isbn, $erro_foto);
+
+            if ($erro_foto !== "") {
+                $mensagem = $erro_foto;
+                $tipo = "erro";
+            } else {
+                $sql = "INSERT INTO livros (isbn, `edição`, custo, titulo, acervo, foto)
+                        VALUES (?, ?, ?, ?, ?, ?)";
+
+                $stmt = $conexao->prepare($sql);
+                $stmt->bind_param("iidsis", $isbn, $edicao, $custo, $titulo, $acervo, $foto);
+
+                if ($stmt->execute()) {
+                    $mensagem = "Livro cadastrado com sucesso!";
+                    $tipo = "ok";
+                } else {
+                    $mensagem = "Erro ao cadastrar livro: " . $stmt->error;
+                    $tipo = "erro";
+
+                    if ($foto !== "") {
+                        foto_remover($foto);
+                    }
+                }
+
                 $stmt->close();
             }
-
-            if ($editora !== "") {
-                $stmt = $conexao->prepare("INSERT INTO editora (publicacao, nome_editora) VALUES (?, ?)");
-                $stmt->bind_param("ss", $isbn, $editora);
-                $stmt->execute();
-                $stmt->close();
-            }
-
-            $conexao->close();
-            header("Location: listar_livros.php?cadastrado=1");
-            exit;
         }
     }
 }
 
 $conexao->close();
 ?>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreams Books - Cadastrar livro</title>
+    <title>Dreams Books - Cadastrar Livro</title>
     <link rel="stylesheet" href="style.css">
+
+    <style>
+    .campo-foto {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .campo-foto input[type="file"] {
+        padding: 10px 12px;
+        border: 1px dashed #d9c6e3;
+        border-radius: 8px;
+        background: #faf6fc;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    .campo-foto small {
+        color: #8a7a90;
+        font-size: 12px;
+    }
+    </style>
 </head>
 
 <body>
-    <?php include "header.php"; ?>
+    <header>
+        <h1>Dreams Books</h1>
+        <nav>
+            <a href="admin.php">Voltar para Admin</a>
+        </nav>
+    </header>
 
     <main>
-        <h2>Cadastrar livro</h2>
+        <div class="formulario">
+            <h1>Cadastrar Livro</h1>
 
-        <?php if ($erro !== ""): ?>
-            <div class="mensagem erro"><?= htmlspecialchars($erro) ?></div>
-        <?php endif; ?>
-
-        <div class="card card-form">
             <form method="POST" enctype="multipart/form-data">
                 <label>ISBN</label>
-                <div class="campo"><span class="icone">🔢</span><input type="text" name="isbn" required></div>
+                <input type="number" name="isbn" required>
+
+                <label>Edição</label>
+                <input type="number" name="edicao" required>
+
+                <label>Custo (R$)</label>
+                <input type="text" name="custo" placeholder="Ex: 59,90" required>
 
                 <label>Título</label>
-                <div class="campo"><span class="icone">📖</span><input type="text" name="titulo" required></div>
+                <input type="text" name="titulo" required>
 
-                <label>Autor</label>
-                <div class="campo"><span class="icone">✍️</span><input type="text" name="autor"></div>
+                <label>Exemplar (acervo)</label>
+                <select name="acervo" required>
+                    <option value="">Selecione...</option>
+                    <?php while ($exemplar = $exemplares->fetch_assoc()): ?>
+                        <option value="<?= (int)$exemplar["codigo_ex"] ?>">
+                            Exemplar <?= (int)$exemplar["codigo_ex"] ?>
+                        </option>
+                    <?php endwhile; ?>
+                </select>
 
-                <label>Editora</label>
-                <div class="campo"><span class="icone">🏢</span><input type="text" name="editora"></div>
+                <div class="campo-foto">
+                    <label>Capa do livro</label>
+                    <input type="file" name="foto" accept="image/jpeg,image/png,image/webp,image/gif">
+                    <small>JPG, PNG, WEBP ou GIF. Máximo 5 MB.</small>
+                </div>
 
-                <label>Categoria</label>
-                <div class="campo"><span class="icone">🏷️</span><input type="text" name="categoria"></div>
-
-                <label>Preço</label>
-                <div class="campo"><span class="icone">💰</span><input type="text" name="custo" placeholder="0,00" required></div>
-
-                <label>Estoque</label>
-                <div class="campo"><span class="icone">📦</span><input type="number" name="estoque" min="0" value="0"></div>
-
-                <label>Capa</label>
-                <input type="file" name="foto" accept="image/*">
-
-                <button type="submit">Cadastrar livro</button>
+                <button type="submit">
+                    Cadastrar
+                </button>
             </form>
+
+            <?php if ($mensagem != ""): ?>
+                <div class="mensagem <?= $tipo ?>">
+                    <?= htmlspecialchars($mensagem) ?>
+                </div>
+            <?php endif; ?>
+
+            <div class="rodape">
+                Precisa de um exemplar novo? <a href="cadastrar_exemplar.php">Cadastre aqui</a>
+            </div>
         </div>
     </main>
-    
-    <?php include "footer.php"; ?>
 </body>
 </html>

@@ -1,137 +1,201 @@
 <?php
-define("PASTA_FOTOS", __DIR__ . "/fotos");
-define("URL_FOTOS", "fotos");
 
-function garantir_pasta_fotos() {
-    if (!is_dir(PASTA_FOTOS)) {
-        @mkdir(PASTA_FOTOS, 0777, true);
+function fotos_pasta() {
+    $dir = __DIR__ . "/fotos";
+
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0775, true);
+    }
+
+    return $dir;
+}
+
+function foto_slug($texto) {
+    $texto = preg_replace('/[^A-Za-z0-9]+/', '_', trim((string)$texto));
+    return trim($texto, "_");
+}
+
+function foto_erro_txt($codigo) {
+    switch ($codigo) {
+        case UPLOAD_ERR_INI_SIZE:
+        case UPLOAD_ERR_FORM_SIZE:
+            return "A imagem é maior que o limite do servidor.";
+        case UPLOAD_ERR_PARTIAL:
+            return "O envio foi interrompido. Tente novamente.";
+        case UPLOAD_ERR_NO_TMP_DIR:
+            return "O servidor não tem pasta temporária configurada.";
+        case UPLOAD_ERR_CANT_WRITE:
+            return "O servidor não conseguiu gravar o arquivo.";
+        case UPLOAD_ERR_EXTENSION:
+            return "O envio foi bloqueado pelo servidor.";
+        default:
+            return "Falha no envio da imagem.";
     }
 }
 
-function salvar_foto($arquivo, $isbn, &$erro) {
-    if (!is_array($arquivo) || $arquivo["error"] === UPLOAD_ERR_NO_FILE) {
-        return null;
-    }
-
-    if ($arquivo["error"] !== UPLOAD_ERR_OK) {
-        $erro = "Falha no envio da imagem.";
-        return null;
-    }
-
-    if ($arquivo["size"] > 5 * 1024 * 1024) {
-        $erro = "A imagem deve ter no máximo 5 MB.";
-        return null;
-    }
-
-    $ext = strtolower(pathinfo($arquivo["name"], PATHINFO_EXTENSION));
-    $permitidas = ["jpg", "jpeg", "png", "gif", "webp"];
-
-    if (!in_array($ext, $permitidas, true)) {
-        $erro = "Formato inválido. Use JPG, PNG, GIF ou WEBP.";
-        return null;
-    }
-
-    garantir_pasta_fotos();
-
-    $base = preg_replace('/\D/', '', (string)$isbn);
-    if ($base === "") {
-        $base = "livro";
-    }
-
-    $nome = $base . "_" . time() . "_" . bin2hex(random_bytes(3)) . "." . $ext;
-
-    if (!move_uploaded_file($arquivo["tmp_name"], PASTA_FOTOS . "/" . $nome)) {
-        $erro = "Não foi possível salvar a imagem.";
-        return null;
-    }
-
-    reduzir_foto(PASTA_FOTOS . "/" . $nome);
-
-    return URL_FOTOS . "/" . $nome;
-}
-
-function reduzir_foto($caminho, $largura_max = 600) {
-    if (!function_exists("imagecreatetruecolor")) {
+function foto_reduzir($caminho, $max = 700) {
+    if (!function_exists("imagecreatefromstring")) {
         return;
     }
 
-    $info = @getimagesize($caminho);
-    if (!$info) {
+    $dados = @file_get_contents($caminho);
+
+    if (!$dados) {
         return;
     }
 
-    $largura = $info[0];
-    $altura  = $info[1];
-
-    if ($largura <= $largura_max) {
-        return;
-    }
-
-    $nova_altura = (int)round($altura * ($largura_max / $largura));
-    $tipo = $info[2];
-
-    switch ($tipo) {
-        case IMAGETYPE_JPEG: $img = @imagecreatefromjpeg($caminho); break;
-        case IMAGETYPE_PNG:  $img = @imagecreatefrompng($caminho);  break;
-        case IMAGETYPE_GIF:  $img = @imagecreatefromgif($caminho);  break;
-        case IMAGETYPE_WEBP: $img = function_exists("imagecreatefromwebp") ? @imagecreatefromwebp($caminho) : null; break;
-        default: return;
-    }
+    $img = @imagecreatefromstring($dados);
 
     if (!$img) {
         return;
     }
 
-    $nova = imagecreatetruecolor($largura_max, $nova_altura);
+    $larg = imagesx($img);
+    $alt  = imagesy($img);
 
-    if ($tipo == IMAGETYPE_PNG || $tipo == IMAGETYPE_WEBP) {
-        imagealphablending($nova, false);
-        imagesavealpha($nova, true);
-    }
-
-    imagecopyresampled($nova, $img, 0, 0, 0, 0, $largura_max, $nova_altura, $largura, $altura);
-
-    switch ($tipo) {
-        case IMAGETYPE_JPEG: imagejpeg($nova, $caminho, 82); break;
-        case IMAGETYPE_PNG:  imagepng($nova, $caminho, 8);   break;
-        case IMAGETYPE_GIF:  imagegif($nova, $caminho);      break;
-        case IMAGETYPE_WEBP: if (function_exists("imagewebp")) imagewebp($nova, $caminho, 82); break;
-    }
-
-    imagedestroy($img);
-    imagedestroy($nova);
-}
-
-function apagar_foto($foto) {
-    if (empty($foto)) {
+    if ($larg <= $max && $alt <= $max) {
+        imagedestroy($img);
         return;
     }
 
-    $foto = str_replace("\\", "/", $foto);
-    $caminho = realpath(__DIR__ . "/" . ltrim($foto, "/"));
-    $pasta = realpath(PASTA_FOTOS);
+    $escala    = min($max / $larg, $max / $alt);
+    $nova_larg = max(1, (int)round($larg * $escala));
+    $nova_alt  = max(1, (int)round($alt * $escala));
 
-    if ($caminho && $pasta && strpos($caminho, $pasta) === 0 && is_file($caminho)) {
-        @unlink($caminho);
+    $nova   = imagecreatetruecolor($nova_larg, $nova_alt);
+    $branco = imagecolorallocate($nova, 255, 255, 255);
+    imagefill($nova, 0, 0, $branco);
+    imagecopyresampled($nova, $img, 0, 0, 0, 0, $nova_larg, $nova_alt, $larg, $alt);
+
+    $info = @getimagesize($caminho);
+    $mime = $info["mime"] ?? "";
+
+    if ($mime === "image/png") {
+        @imagepng($nova, $caminho, 8);
+    } elseif ($mime === "image/webp" && function_exists("imagewebp")) {
+        @imagewebp($nova, $caminho, 85);
+    } elseif ($mime === "image/gif") {
+        @imagegif($nova, $caminho);
+    } else {
+        @imagejpeg($nova, $caminho, 85);
     }
+
+    imagedestroy($nova);
+    imagedestroy($img);
+}
+
+function salvar_foto($arquivo, $chave = "", &$erro = null) {
+    $erro = "";
+
+    if (!is_array($arquivo) || !isset($arquivo["error"])) {
+        return "";
+    }
+
+    if ((int)$arquivo["error"] === UPLOAD_ERR_NO_FILE) {
+        return "";
+    }
+
+    if ((int)$arquivo["error"] !== UPLOAD_ERR_OK) {
+        $erro = foto_erro_txt((int)$arquivo["error"]);
+        return "";
+    }
+
+    if (!is_uploaded_file($arquivo["tmp_name"])) {
+        $erro = "Envio inválido.";
+        return "";
+    }
+
+    $tamanho = (int)($arquivo["size"] ?? 0);
+
+    if ($tamanho <= 0) {
+        $erro = "O arquivo está vazio.";
+        return "";
+    }
+
+    if ($tamanho > 5 * 1024 * 1024) {
+        $erro = "A imagem deve ter no máximo 5 MB.";
+        return "";
+    }
+
+    $info = @getimagesize($arquivo["tmp_name"]);
+
+    if (!$info || empty($info["mime"])) {
+        $erro = "O arquivo não é uma imagem válida.";
+        return "";
+    }
+
+    $extensoes = [
+        "image/jpeg" => "jpg",
+        "image/png"  => "png",
+        "image/webp" => "webp",
+        "image/gif"  => "gif"
+    ];
+
+    $ext = $extensoes[$info["mime"]] ?? "";
+
+    if ($ext === "") {
+        $erro = "Formato não aceito. Use JPG, PNG, WEBP ou GIF.";
+        return "";
+    }
+
+    $base = foto_slug($chave);
+
+    if ($base === "") {
+        $base = "livro";
+    }
+
+    $nome    = strtolower($base) . "_" . substr(md5(uniqid("", true)), 0, 8) . "." . $ext;
+    $destino = fotos_pasta() . "/" . $nome;
+
+    if (!@move_uploaded_file($arquivo["tmp_name"], $destino)) {
+        $erro = "Não foi possível salvar. Verifique a permissão da pasta fotos.";
+        return "";
+    }
+
+    @chmod($destino, 0664);
+    foto_reduzir($destino, 700);
+
+    return "fotos/" . $nome;
 }
 
 function foto_url($foto) {
-    if (empty($foto)) {
-        return null;
+    $foto = trim(str_replace("\\", "/", (string)$foto));
+
+    if ($foto === "") {
+        return "";
     }
 
-    $foto = str_replace("\\", "/", $foto);
-
-    if (is_file(__DIR__ . "/" . ltrim($foto, "/"))) {
+    if (preg_match('#^https?://#i', $foto)) {
         return $foto;
     }
 
-    $alt = URL_FOTOS . "/" . basename($foto);
+    $foto = ltrim($foto, "/");
 
-    if (is_file(__DIR__ . "/" . $alt)) {
-        return $alt;
+    if (is_file(__DIR__ . "/" . $foto)) {
+        return $foto;
     }
 
-    return null;
+    $base = basename($foto);
+
+    if ($base === "") {
+        return "";
+    }
+
+    if (is_file(fotos_pasta() . "/" . $base)) {
+        return "fotos/" . $base;
+    }
+
+    return "";
+}
+
+function foto_remover($foto) {
+    $url = foto_url($foto);
+
+    if ($url === "" || preg_match('#^https?://#i', $url)) {
+        return false;
+    }
+
+    $caminho = __DIR__ . "/" . $url;
+
+    return is_file($caminho) ? @unlink($caminho) : false;
 }

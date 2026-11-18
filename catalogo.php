@@ -2,6 +2,42 @@
 session_start();
 require "conexao.php";
 
+if (is_file(__DIR__ . "/_fotos.php")) {
+    require_once __DIR__ . "/_fotos.php";
+}
+
+if (!function_exists("foto_url")) {
+    function foto_url($foto) {
+        $foto = trim(str_replace("\\", "/", (string)$foto));
+
+        if ($foto === "") {
+            return "";
+        }
+
+        if (preg_match('#^https?://#i', $foto)) {
+            return $foto;
+        }
+
+        $foto = ltrim($foto, "/");
+
+        if (is_file(__DIR__ . "/" . $foto)) {
+            return $foto;
+        }
+
+        $base = basename($foto);
+
+        if ($base === "") {
+            return "";
+        }
+
+        if (is_file(__DIR__ . "/fotos/" . $base)) {
+            return "fotos/" . $base;
+        }
+
+        return "";
+    }
+}
+
 $busca = trim($_GET["busca"] ?? "");
 $categoria = trim($_GET["categoria"] ?? "");
 $preco = trim($_GET["preco"] ?? "");
@@ -35,8 +71,27 @@ if (!empty($condicoes)) {
 
 $sql .= $ordem == "preco" ? " ORDER BY l.custo ASC" : " ORDER BY l.titulo";
 
-$resultado = $conexao->query($sql);
-$categorias = $conexao->query("SELECT DISTINCT categoria FROM livros WHERE categoria IS NOT NULL AND categoria != '' ORDER BY categoria");
+$livros = [];
+$lista_categorias = [];
+
+try {
+    $resultado = $conexao->query($sql);
+
+    if ($resultado instanceof mysqli_result) {
+        while ($row = $resultado->fetch_assoc()) {
+            $livros[] = $row;
+        }
+    }
+
+    $res_cat = $conexao->query("SELECT DISTINCT categoria FROM livros WHERE categoria IS NOT NULL AND categoria != '' ORDER BY categoria");
+
+    if ($res_cat instanceof mysqli_result) {
+        while ($row = $res_cat->fetch_assoc()) {
+            $lista_categorias[] = $row["categoria"];
+        }
+    }
+} catch (Throwable $e) {
+}
 
 mysqli_close($conexao);
 
@@ -49,7 +104,7 @@ if ($busca != "") $titulo_pagina = "Resultados para \"" . $busca . "\"";
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?= $titulo_pagina ?> - Dreams Books</title>
+<title><?= htmlspecialchars($titulo_pagina) ?> - Dreams Books</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -65,11 +120,11 @@ if ($busca != "") $titulo_pagina = "Resultados para \"" . $busca . "\"";
             <label>Categoria</label>
             <select name="categoria" onchange="this.form.submit()">
                 <option value="">Todas</option>
-                <?php while ($cat = $categorias->fetch_assoc()): ?>
-                    <option value="<?= htmlspecialchars($cat["categoria"]) ?>" <?= $categoria == $cat["categoria"] ? "selected" : "" ?>>
-                        <?= htmlspecialchars($cat["categoria"]) ?>
+                <?php foreach ($lista_categorias as $cat): ?>
+                    <option value="<?= htmlspecialchars($cat) ?>" <?= $categoria == $cat ? "selected" : "" ?>>
+                        <?= htmlspecialchars($cat) ?>
                     </option>
-                <?php endwhile; ?>
+                <?php endforeach; ?>
             </select>
         </div>
         <div class="filtro-grupo">
@@ -89,17 +144,18 @@ if ($busca != "") $titulo_pagina = "Resultados para \"" . $busca . "\"";
         </div>
     </form>
 
-    <?php if ($resultado->num_rows == 0): ?>
+    <?php if (count($livros) == 0): ?>
         <p class="nenhum">Nenhum livro encontrado. <a href="catalogo.php">Ver todos</a></p>
     <?php else: ?>
         <div class="grade-livros">
-            <?php while ($livro = $resultado->fetch_assoc()): ?>
+            <?php foreach ($livros as $livro): ?>
+                <?php $capa_url = foto_url($livro["foto"] ?? ""); ?>
                 <div class="card-livro">
                     <div class="capa-card">
-                        <?php if (!empty($livro["foto"]) && file_exists($livro["foto"])): ?>
-                            <img src="<?= $livro["foto"] ?>">
+                        <?php if ($capa_url !== ""): ?>
+                            <img src="<?= htmlspecialchars($capa_url) ?>" alt="<?= htmlspecialchars($livro["titulo"]) ?>">
                         <?php else: ?>
-                            <div class="capa-vazia"></div>
+                            <div class="capa-vazia">📕</div>
                         <?php endif; ?>
                     </div>
                     <?php if (!empty($livro["categoria"])): ?>
@@ -108,15 +164,15 @@ if ($busca != "") $titulo_pagina = "Resultados para \"" . $busca . "\"";
                     <h3><?= htmlspecialchars($livro["titulo"]) ?></h3>
                     <?php if (!empty($livro["nome_autor"])): ?>
                         <p class="autor-livro"><a class="autor-link" href="autor.php?nome=<?= urlencode($livro["nome_autor"]) ?>"><?= htmlspecialchars($livro["nome_autor"]) ?></a></p>
-                    <?php endif; ?>                    
-                    <p class="preco-card">R$ <?= number_format($livro["custo"], 2, ",", ".") ?></p>
+                    <?php endif; ?>
+                    <p class="preco-card">R$ <?= number_format((float)$livro["custo"], 2, ",", ".") ?></p>
                     <?php if ((int)$livro["estoque"] <= 0): ?>
                         <span class="esgotado" style="margin-top:auto;">Esgotado</span>
                     <?php else: ?>
-                        <a href="livro.php?isbn=<?= $livro["isbn"] ?>" class="botao-ver">Ver livro</a>
+                        <a href="livro.php?isbn=<?= urlencode($livro["isbn"]) ?>" class="botao-ver">Ver livro</a>
                     <?php endif; ?>
                 </div>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         </div>
     <?php endif; ?>
 </main>
